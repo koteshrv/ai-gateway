@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -39,13 +40,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         Tenant tenant = (Tenant) request.getAttribute(ApiKeyFilter.TENANT_ATTRIBUTE);
 
         if (tenantId == null || tenant == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Tenant context missing");
+            writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Tenant context missing");
             return;
         }
 
         boolean allowed = tryAcquire(tenantId, tenant.rateLimit(), Instant.now(clock).toEpochMilli());
         if (!allowed) {
-            response.sendError(429, "Rate limit exceeded");
+            writeJsonError(response, 429, "Too Many Requests", "Rate limit exceeded");
             return;
         }
 
@@ -87,5 +88,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             tokens = Math.min(capacity, tokens + refilled);
             lastRefillEpochMillis = nowEpochMillis;
         }
+    }
+
+    private void writeJsonError(HttpServletResponse response, int status, String error, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write("""
+                {"status":%d,"error":"%s","message":"%s"}
+                """.formatted(status, error, message).trim());
     }
 }
