@@ -1,0 +1,25 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: orbit-gateway
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+gateway:
+  api-key-header: X-API-Key
+
+tenants:
+  tenant-a:
+    apiKey: ${TENANT_A_API_KEY:key-tenant-a-123}
+    backendUrl: "https://httpbin.org"
+    rateLimit: 10
+  tenant-b:
+    apiKey: ${TENANT_B_API_KEY:key-tenant-b-456}
+    backendUrl: "https://jsonplaceholder.typicode.com"
+    rateLimit: 20
